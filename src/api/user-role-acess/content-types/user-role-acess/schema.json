@@ -1,0 +1,42 @@
+{
+  "kind": "collectionType",
+  "collectionName": "user_role_acesses",
+  "info": {
+    "singularName": "user-role-acess",
+    "pluralName": "user-role-acesses",
+    "displayName": "UserRoleAcess"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "module": {
+      "type": "string"
+    },
+    "role": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::user-role.user-role",
+      "inversedBy": "acesses"
+    },
+    "create": {
+      "type": "boolean"
+    },
+    "read": {
+      "type": "boolean"
+    },
+    "update": {
+      "type": "boolean"
+    },
+    "delete": {
+      "type": "boolean"
+    },
+    "export": {
+      "type": "boolean"
+    },
+    "approve": {
+      "type": "boolean"
+    }
+  }
+}

@@ -71,6 +71,25 @@
     },
     "lastname": {
       "type": "string"
+    },
+    "user_role": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::user-role.user-role",
+      "inversedBy": "users"
+    },
+    "avatar": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
+    },
+    "phone": {
+      "type": "string"
     }
   }
 }

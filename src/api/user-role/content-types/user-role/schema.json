@@ -1,0 +1,33 @@
+{
+  "kind": "collectionType",
+  "collectionName": "user_roles",
+  "info": {
+    "singularName": "user-role",
+    "pluralName": "user-roles",
+    "displayName": "UserRole"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "label": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string"
+    },
+    "users": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::users-permissions.user",
+      "mappedBy": "user_role"
+    },
+    "acesses": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::user-role-acess.user-role-acess",
+      "mappedBy": "role"
+    }
+  }
+}
