@@ -1,0 +1,75 @@
+{
+  "kind": "collectionType",
+  "collectionName": "app_settings",
+  "info": {
+    "singularName": "app-setting",
+    "pluralName": "app-settings",
+    "displayName": "AppSetting"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "logo": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
+    },
+    "pharmacyName": {
+      "type": "string"
+    },
+    "address": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "email": {
+      "type": "email"
+    },
+    "language": {
+      "type": "enumeration",
+      "enum": [
+        "FR",
+        "EN"
+      ]
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "hoursOfOperation": {
+      "type": "json"
+    },
+    "sessionDuration": {
+      "type": "integer"
+    },
+    "timeBeforeAutomaticLogout": {
+      "type": "integer"
+    },
+    "numberOfAllowedLoginAttempts": {
+      "type": "integer"
+    },
+    "minimumPasswordLength": {
+      "type": "integer"
+    },
+    "notifyByEmail": {
+      "type": "boolean"
+    },
+    "notifyBySMS": {
+      "type": "boolean"
+    },
+    "recipientsOfCriticalAlerts": {
+      "type": "text"
+    },
+    "isDefault": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}

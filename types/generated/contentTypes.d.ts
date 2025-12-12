@@ -430,6 +430,49 @@ export interface AdminUser extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiAppSettingAppSetting extends Struct.CollectionTypeSchema {
+  collectionName: 'app_settings';
+  info: {
+    displayName: 'AppSetting';
+    pluralName: 'app-settings';
+    singularName: 'app-setting';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    address: Schema.Attribute.String;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    email: Schema.Attribute.Email;
+    hoursOfOperation: Schema.Attribute.JSON;
+    isDefault: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    language: Schema.Attribute.Enumeration<['FR', 'EN']>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::app-setting.app-setting'
+    > &
+      Schema.Attribute.Private;
+    logo: Schema.Attribute.Media<'images' | 'files' | 'videos' | 'audios'>;
+    minimumPasswordLength: Schema.Attribute.Integer;
+    notifyByEmail: Schema.Attribute.Boolean;
+    notifyBySMS: Schema.Attribute.Boolean;
+    numberOfAllowedLoginAttempts: Schema.Attribute.Integer;
+    pharmacyName: Schema.Attribute.String;
+    phone: Schema.Attribute.String;
+    publishedAt: Schema.Attribute.DateTime;
+    recipientsOfCriticalAlerts: Schema.Attribute.Text;
+    sessionDuration: Schema.Attribute.Integer;
+    timeBeforeAutomaticLogout: Schema.Attribute.Integer;
+    timezone: Schema.Attribute.String;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiUserRoleAcessUserRoleAcess
   extends Struct.CollectionTypeSchema {
   collectionName: 'user_role_acesses';
@@ -1020,6 +1063,7 @@ declare module '@strapi/strapi' {
       'admin::transfer-token': AdminTransferToken;
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
+      'api::app-setting.app-setting': ApiAppSettingAppSetting;
       'api::user-role-acess.user-role-acess': ApiUserRoleAcessUserRoleAcess;
       'api::user-role.user-role': ApiUserRoleUserRole;
       'plugin::content-releases.release': PluginContentReleasesRelease;
