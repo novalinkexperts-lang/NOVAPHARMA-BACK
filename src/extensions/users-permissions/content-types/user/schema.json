@@ -90,6 +90,12 @@
     },
     "phone": {
       "type": "string"
+    },
+    "logs": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::log.log",
+      "mappedBy": "user"
     }
   }
 }

@@ -67,6 +67,11 @@ export default factories.createCoreController('api::app-setting.app-setting', ({
                     data: settingData,
                 });
 
+            await strapi.documents('api::app-setting.app-setting')
+                .publish({
+                    documentId: newSetting.documentId,
+                });
+
             return ctx.send({ data: newSetting }, 201);
         } catch (error) {
             strapi.log.error('Error creating default app setting:', error);
@@ -106,6 +111,11 @@ export default factories.createCoreController('api::app-setting.app-setting', ({
                 .update({
                     documentId: existingDefault.documentId,
                     data: updateData,
+                });
+
+            await strapi.documents('api::app-setting.app-setting')
+                .publish({
+                    documentId: updatedSetting.documentId,
                 });
 
             return ctx.send({ data: updatedSetting }, 200);

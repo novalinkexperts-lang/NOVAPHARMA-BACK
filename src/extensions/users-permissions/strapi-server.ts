@@ -1,6 +1,6 @@
 import type { Core } from '@strapi/strapi';
 
-export default (plugin: any) => {
+export default (plugin: Core.Plugin) => {
     // Store the original methods
     const originalFind = plugin.controllers.user.find;
     const originalUpdate = plugin.controllers.user.update;
@@ -15,7 +15,7 @@ export default (plugin: any) => {
         if (!id) {
             console.log('[FIND] Case: LIST QUERY - No ID in params, using original find behavior');
             console.log('[FIND] Query params:', JSON.stringify(ctx.query, null, 2));
-            return originalFind(ctx);
+            return originalFind(ctx, null);
         }
 
         // Check if id is a documentId (UUID-like format) or numeric ID
@@ -108,7 +108,7 @@ export default (plugin: any) => {
             console.log('[FIND] Using NUMERIC ID path - delegating to original find');
             console.log('[FIND] Numeric ID:', id);
             console.log('[FIND] Query params:', JSON.stringify(ctx.query, null, 2));
-            return originalFind(ctx);
+            return originalFind(ctx, null);
         }
     };
 
