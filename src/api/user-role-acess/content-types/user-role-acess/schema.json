@@ -11,9 +11,6 @@
   },
   "pluginOptions": {},
   "attributes": {
-    "module": {
-      "type": "string"
-    },
     "role": {
       "type": "relation",
       "relation": "manyToOne",
@@ -37,6 +34,12 @@
     },
     "approve": {
       "type": "boolean"
+    },
+    "module": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::module.module",
+      "inversedBy": "role_acesses"
     }
   }
 }

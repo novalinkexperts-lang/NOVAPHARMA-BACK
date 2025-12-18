@@ -1,6 +1,8 @@
 import type { Core } from '@strapi/strapi';
 
 export default (plugin: Core.Plugin) => {
+    const logService = strapi.service('api::log.log');
+
     // Store the original methods
     const originalFind = plugin.controllers.user.find;
     const originalUpdate = plugin.controllers.user.update;
@@ -125,6 +127,7 @@ export default (plugin: Core.Plugin) => {
 
         // Find the user by documentId to get the actual id
         let userId: number | string;
+        let existingUser: any;
 
         try {
             // In Strapi v5, find user by documentId
@@ -136,6 +139,7 @@ export default (plugin: Core.Plugin) => {
             }
 
             userId = user.id;
+            existingUser = user;
         } catch (error) {
             strapi.log.error('Error finding user by documentId:', error);
             return ctx.internalServerError('Error finding user');
@@ -177,6 +181,17 @@ export default (plugin: Core.Plugin) => {
         // Add your custom logic here after the update
         strapi.log.info(`User with documentId ${id} updated successfully`);
 
+        try {
+            await logService.recordUserLog(ctx, {
+                action: 'update',
+                details: 'Mise à jour du compte utilisateur',
+                dataBefore: existingUser,
+                dataAfter: result,
+            });
+        } catch (error) {
+            strapi.log.error('Error recording user update log', error);
+        }
+
         return result;
     };
 
@@ -214,6 +229,17 @@ export default (plugin: Core.Plugin) => {
                 });
 
             strapi.log.info('User created successfully with authenticated role');
+
+            try {
+                await logService.recordUserLog(ctx, {
+                    action: 'create',
+                    details: 'Création d’un compte utilisateur',
+                    dataAfter: result,
+                });
+            } catch (error) {
+                strapi.log.error('Error recording user creation log', error);
+            }
+
             return result;
         } catch (error) {
             console.log(error.details);

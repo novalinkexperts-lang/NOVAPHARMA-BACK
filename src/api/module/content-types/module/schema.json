@@ -22,6 +22,12 @@
       "relation": "oneToMany",
       "target": "api::log.log",
       "mappedBy": "module"
+    },
+    "role_acesses": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::user-role-acess.user-role-acess",
+      "mappedBy": "module"
     }
   }
 }

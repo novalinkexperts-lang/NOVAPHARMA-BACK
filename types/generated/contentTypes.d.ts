@@ -535,6 +535,10 @@ export interface ApiModuleModule extends Struct.CollectionTypeSchema {
     logs: Schema.Attribute.Relation<'oneToMany', 'api::log.log'>;
     publishedAt: Schema.Attribute.DateTime;
     ref: Schema.Attribute.String;
+    role_acesses: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::user-role-acess.user-role-acess'
+    >;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -566,7 +570,7 @@ export interface ApiUserRoleAcessUserRoleAcess
       'api::user-role-acess.user-role-acess'
     > &
       Schema.Attribute.Private;
-    module: Schema.Attribute.String;
+    module: Schema.Attribute.Relation<'manyToOne', 'api::module.module'>;
     publishedAt: Schema.Attribute.DateTime;
     read: Schema.Attribute.Boolean;
     role: Schema.Attribute.Relation<'manyToOne', 'api::user-role.user-role'>;
