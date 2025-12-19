@@ -473,6 +473,41 @@ export interface ApiAppSettingAppSetting extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiBackupBackup extends Struct.CollectionTypeSchema {
+  collectionName: 'backups';
+  info: {
+    displayName: 'Backup';
+    pluralName: 'backups';
+    singularName: 'backup';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    backupType: Schema.Attribute.Enumeration<['complete', 'incremental']>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    date: Schema.Attribute.DateTime;
+    error: Schema.Attribute.String;
+    filename: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::backup.backup'
+    > &
+      Schema.Attribute.Private;
+    location: Schema.Attribute.Enumeration<['local', 'cloud']>;
+    publishedAt: Schema.Attribute.DateTime;
+    size: Schema.Attribute.BigInteger;
+    state: Schema.Attribute.Enumeration<['success', 'failed']>;
+    type: Schema.Attribute.Enumeration<['auto', 'manual']>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiLogLog extends Struct.CollectionTypeSchema {
   collectionName: 'logs';
   info: {
@@ -1137,6 +1172,7 @@ declare module '@strapi/strapi' {
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
       'api::app-setting.app-setting': ApiAppSettingAppSetting;
+      'api::backup.backup': ApiBackupBackup;
       'api::log.log': ApiLogLog;
       'api::module.module': ApiModuleModule;
       'api::user-role-acess.user-role-acess': ApiUserRoleAcessUserRoleAcess;

@@ -1,0 +1,55 @@
+{
+  "kind": "collectionType",
+  "collectionName": "backups",
+  "info": {
+    "singularName": "backup",
+    "pluralName": "backups",
+    "displayName": "Backup"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "date": {
+      "type": "datetime"
+    },
+    "type": {
+      "type": "enumeration",
+      "enum": [
+        "auto",
+        "manual"
+      ]
+    },
+    "backupType": {
+      "type": "enumeration",
+      "enum": [
+        "complete",
+        "incremental"
+      ]
+    },
+    "size": {
+      "type": "biginteger"
+    },
+    "state": {
+      "type": "enumeration",
+      "enum": [
+        "success",
+        "failed"
+      ]
+    },
+    "location": {
+      "type": "enumeration",
+      "enum": [
+        "local",
+        "cloud"
+      ]
+    },
+    "filename": {
+      "type": "string"
+    },
+    "error": {
+      "type": "string"
+    }
+  }
+}
