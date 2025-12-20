@@ -88,6 +88,10 @@ export default factories.createCoreController('api::backup.backup', ({ strapi })
         /**
          * POST /backups/:backupId/restore
          * Restaure un backup existant
+         * 
+         * ATTENTION: Cette opération ferme la connexion à la base de données.
+         * Strapi doit être redémarré après une restauration pour que la connexion
+         * soit recréée correctement.
          */
         async restore(ctx) {
             try {
@@ -102,10 +106,12 @@ export default factories.createCoreController('api::backup.backup', ({ strapi })
 
                 const result = await backupService.restoreBackup(backupId);
 
+                // Retourner la réponse avec un code 200 mais avec un avertissement
                 return ctx.send({
                     success: true,
                     data: result,
-                });
+                    warning: result.warning || 'Strapi restart is REQUIRED after restore.',
+                }, 200);
             } catch (error: any) {
                 strapi.log.error('Error restoring backup:', error);
 

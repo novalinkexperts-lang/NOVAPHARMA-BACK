@@ -234,22 +234,31 @@ export default factories.createCoreService('api::backup.backup', ({ strapi }) =>
                 await copyFile(dbPath, safetyBackupPath);
 
                 // ATTENTION: La restauration nécessite de fermer la connexion à la base de données
-                // Cela peut causer des problèmes si d'autres requêtes sont en cours
-                // Il est recommandé de redémarrer Strapi après une restauration
-                strapi.log.warn('Closing database connection for restore. Strapi may need to be restarted after restore.');
+                // Pour SQLite avec better-sqlite3, nous devons fermer toutes les connexions actives
+                // avant de pouvoir copier le fichier de base de données
+                strapi.log.warn('Preparing to restore backup. This will close the database connection.');
 
                 try {
-                    // Fermer toutes les connexions à la base de données
-                    if (strapi.db.connection && typeof strapi.db.connection.destroy === 'function') {
-                        await strapi.db.connection.destroy();
+                    // Pour SQLite avec better-sqlite3, nous devons fermer toutes les connexions
+                    // avant de pouvoir copier le fichier de base de données
+                    const knex = strapi.db.connection;
+
+                    if (knex && typeof knex.destroy === 'function') {
+                        // Fermer toutes les connexions actives
+                        await knex.destroy();
+                        strapi.log.info('Database connections closed for restore');
                     }
 
                     // Copier le backup sur la base de données
                     await copyFile(backupPath, dbPath);
+                    strapi.log.info('Backup file copied successfully');
 
-                    // Note: La reconnexion peut ne pas fonctionner correctement
-                    // Il est recommandé de redémarrer Strapi après une restauration
-                    strapi.log.warn('Database restored. Please restart Strapi to ensure proper connection.');
+                    // IMPORTANT: Avec Knex et better-sqlite3, il n'est pas possible de recréer
+                    // la connexion de manière fiable sans redémarrer Strapi.
+                    // La connexion sera recréée automatiquement lors de la prochaine requête,
+                    // mais cela peut causer des erreurs temporaires.
+                    strapi.log.warn('Database restored. Strapi restart is REQUIRED for proper operation.');
+
                 } catch (restoreError: any) {
                     strapi.log.error('Error during restore operation:', restoreError);
                     // Essayer de restaurer le backup de sécurité
@@ -264,8 +273,10 @@ export default factories.createCoreService('api::backup.backup', ({ strapi }) =>
 
                 return {
                     success: true,
-                    message: 'Backup restored successfully',
+                    message: 'Backup restored successfully. Strapi restart is REQUIRED.',
                     safetyBackup: path.basename(safetyBackupPath),
+                    requiresRestart: true,
+                    warning: 'The database connection has been closed. Please restart Strapi immediately to avoid connection errors.',
                 };
             } else if (client === 'postgres' || client === 'mysql') {
                 // TODO: Implémenter la restauration pour PostgreSQL/MySQL
