@@ -1,0 +1,691 @@
+openapi: 3.0.3
+info:
+  title: Backup API
+  description: |
+    API pour la gestion des sauvegardes de la base de données.
+    
+    Cette API permet de :
+    - Créer des backups de la base de données (asynchrone ou synchrone)
+    - Suivre la progression des backups en cours
+    - Restaurer un backup existant
+    - Lister et gérer les fichiers de backup
+  version: 1.0.0
+  contact:
+    name: Pharmacy Next API Support
+
+servers:
+  - url: http://localhost:1337/api
+    description: Serveur de développement local
+  - url: https://api.example.com/api
+    description: Serveur de production
+
+tags:
+  - name: backups
+    description: Gestion des sauvegardes de la base de données
+
+paths:
+  /backups/create:
+    post:
+      tags:
+        - backups
+      summary: Créer un backup (asynchrone)
+      description: |
+        Lance la création d'un backup de manière asynchrone.
+        Retourne immédiatement un `backupId` pour suivre la progression.
+      operationId: createBackupAsync
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum: [auto, manual]
+                  default: manual
+                  description: Type de backup (automatique ou manuel)
+                backupType:
+                  type: string
+                  enum: [complete, incremental]
+                  default: complete
+                  description: Type de sauvegarde (complète ou incrémentale)
+              example:
+                type: manual
+                backupType: complete
+      responses:
+        '202':
+          description: Backup créé avec succès (traitement asynchrone)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Backup creation started
+                  backupId:
+                    type: string
+                    example: backup_1704067200000_abc123
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /backups/create-sync:
+    post:
+      tags:
+        - backups
+      summary: Créer un backup (synchrone)
+      description: |
+        Crée un backup de manière synchrone.
+        Attend la fin du processus avant de retourner la réponse.
+      operationId: createBackupSync
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum: [auto, manual]
+                  default: manual
+                backupType:
+                  type: string
+                  enum: [complete, incremental]
+                  default: complete
+      responses:
+        '201':
+          description: Backup créé avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Backup'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /backups/{backupId}/progress:
+    get:
+      tags:
+        - backups
+      summary: Récupérer la progression d'un backup
+      description: |
+        Récupère l'état de progression d'un backup en cours d'exécution.
+        Le `backupId` est retourné lors de la création asynchrone d'un backup.
+      operationId: getBackupProgress
+      parameters:
+        - name: backupId
+          in: path
+          required: true
+          description: ID du backup retourné lors de la création
+          schema:
+            type: string
+            example: backup_1704067200000_abc123
+      responses:
+        '200':
+          description: Progression du backup
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      progress:
+                        type: integer
+                        minimum: 0
+                        maximum: 100
+                        description: Pourcentage de progression (0-100)
+                        example: 75
+                      status:
+                        type: string
+                        enum: [running, completed, failed, not_found]
+                        description: État du backup
+                        example: running
+                      error:
+                        type: string
+                        description: Message d'erreur si le backup a échoué
+                        example: null
+                    example:
+                      progress: 75
+                      status: running
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /backups/{backupId}/restore:
+    post:
+      tags:
+        - backups
+      summary: Restaurer un backup
+      description: |
+        Restaure un backup existant à partir de son `documentId`.
+        Un backup de sécurité est automatiquement créé avant la restauration.
+        
+        **Attention** : La restauration nécessite de fermer la connexion à la base de données.
+        Il est recommandé de redémarrer Strapi après une restauration.
+      operationId: restoreBackup
+      parameters:
+        - name: backupId
+          in: path
+          required: true
+          description: Document ID du backup à restaurer (documentId de la collection)
+          schema:
+            type: string
+            example: 1
+      responses:
+        '200':
+          description: Backup restauré avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+                        example: true
+                      message:
+                        type: string
+                        example: Backup restored successfully
+                      safetyBackup:
+                        type: string
+                        description: Nom du fichier de backup de sécurité créé
+                        example: data_safety_2024-01-01T12-00-00-000Z.db
+                    example:
+                      success: true
+                      message: Backup restored successfully
+                      safetyBackup: data_safety_2024-01-01T12-00-00-000Z.db
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /backups/files:
+    get:
+      tags:
+        - backups
+      summary: Lister les fichiers de backup
+      description: |
+        Retourne la liste de tous les fichiers de backup disponibles sur le serveur.
+      operationId: listBackupFiles
+      responses:
+        '200':
+          description: Liste des fichiers de backup
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        filename:
+                          type: string
+                          example: data_backup_2024-01-01T12-00-00-000Z.db
+                        size:
+                          type: integer
+                          format: int64
+                          description: Taille du fichier en octets
+                          example: 1048576
+                        createdAt:
+                          type: string
+                          format: date-time
+                          description: Date de création du fichier
+                          example: '2024-01-01T12:00:00.000Z'
+                        modifiedAt:
+                          type: string
+                          format: date-time
+                          description: Date de dernière modification
+                          example: '2024-01-01T12:00:00.000Z'
+                    example:
+                      - filename: data_backup_2024-01-01T12-00-00-000Z.db
+                        size: 1048576
+                        createdAt: '2024-01-01T12:00:00.000Z'
+                        modifiedAt: '2024-01-01T12:00:00.000Z'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /backups/files/{filename}:
+    delete:
+      tags:
+        - backups
+      summary: Supprimer un fichier de backup
+      description: |
+        Supprime un fichier de backup du serveur.
+      operationId: deleteBackupFile
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          description: Nom du fichier de backup à supprimer
+          schema:
+            type: string
+            example: data_backup_2024-01-01T12-00-00-000Z.db
+      responses:
+        '200':
+          description: Fichier supprimé avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+                        example: true
+                      message:
+                        type: string
+                        example: Backup file deleted
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /backups/files/{filename}/download:
+    get:
+      tags:
+        - backups
+      summary: Télécharger un fichier de backup
+      description: |
+        Télécharge un fichier de backup depuis le serveur.
+        Le fichier est retourné en tant que fichier binaire avec les en-têtes appropriés.
+      operationId: downloadBackupFile
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          description: Nom du fichier de backup à télécharger
+          schema:
+            type: string
+            example: data_backup_2024-01-01T12-00-00-000Z.db
+      responses:
+        '200':
+          description: Fichier de backup téléchargé avec succès
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+            application/x-sqlite3:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              description: En-tête indiquant le nom du fichier à télécharger
+              schema:
+                type: string
+                example: 'attachment; filename="data_backup_2024-01-01T12-00-00-000Z.db"'
+            Content-Type:
+              description: Type MIME du fichier
+              schema:
+                type: string
+                example: application/octet-stream
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /backups:
+    get:
+      tags:
+        - backups
+      summary: Lister les backups
+      description: |
+        Retourne la liste de tous les backups enregistrés dans la collection.
+        Endpoint standard Strapi avec support des filtres, tri et pagination.
+      operationId: listBackups
+      parameters:
+        - name: filters
+          in: query
+          description: Filtres Strapi (format JSON stringifié)
+          schema:
+            type: string
+            example: '{"state":{"$eq":"success"}}'
+        - name: sort
+          in: query
+          description: Tri (format Strapi)
+          schema:
+            type: string
+            example: date:desc
+        - name: pagination[page]
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pagination[pageSize]
+          in: query
+          schema:
+            type: integer
+            default: 25
+      responses:
+        '200':
+          description: Liste des backups
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Backup'
+                  meta:
+                    type: object
+                    properties:
+                      pagination:
+                        type: object
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - backups
+      summary: Créer un backup (via collection)
+      description: |
+        Crée une entrée dans la collection backup.
+        Note: Pour créer un backup réel, utilisez `/backups/create` ou `/backups/create-sync`.
+      operationId: createBackupEntry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/BackupInput'
+      responses:
+        '201':
+          description: Backup créé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Backup'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /backups/{id}:
+    get:
+      tags:
+        - backups
+      summary: Récupérer un backup
+      description: Récupère un backup par son ID
+      operationId: getBackup
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Backup trouvé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Backup'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      tags:
+        - backups
+      summary: Mettre à jour un backup
+      operationId: updateBackup
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  $ref: '#/components/schemas/BackupInput'
+      responses:
+        '200':
+          description: Backup mis à jour
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Backup'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+        - backups
+      summary: Supprimer un backup
+      operationId: deleteBackup
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Backup supprimé
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    Backup:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID du backup
+          example: 1
+        documentId:
+          type: string
+          description: Document ID Strapi
+          example: '1'
+        date:
+          type: string
+          format: date-time
+          description: Date de création du backup
+          example: '2024-01-01T12:00:00.000Z'
+        type:
+          type: string
+          enum: [auto, manual]
+          description: Type de backup
+          example: manual
+        backupType:
+          type: string
+          enum: [complete, incremental]
+          description: Type de sauvegarde
+          example: complete
+        size:
+          type: integer
+          format: int64
+          description: Taille du fichier en octets
+          example: 1048576
+        state:
+          type: string
+          enum: [success, failed]
+          description: État du backup
+          example: success
+        location:
+          type: string
+          enum: [local, cloud]
+          description: Emplacement du backup
+          example: local
+        filename:
+          type: string
+          description: Nom du fichier de backup
+          example: data_backup_2024-01-01T12-00-00-000Z.db
+        error:
+          type: string
+          nullable: true
+          description: Message d'erreur si le backup a échoué
+          example: null
+        createdAt:
+          type: string
+          format: date-time
+          example: '2024-01-01T12:00:00.000Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2024-01-01T12:00:00.000Z'
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2024-01-01T12:00:00.000Z'
+
+    BackupInput:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date-time
+        type:
+          type: string
+          enum: [auto, manual]
+        backupType:
+          type: string
+          enum: [complete, incremental]
+        size:
+          type: integer
+          format: int64
+        state:
+          type: string
+          enum: [success, failed]
+        location:
+          type: string
+          enum: [local, cloud]
+        filename:
+          type: string
+        error:
+          type: string
+          nullable: true
+
+  responses:
+    BadRequest:
+      description: Requête invalide
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: Bad Request
+
+    NotFound:
+      description: Ressource non trouvée
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 404
+                  message:
+                    type: string
+                    example: Not Found
+
+    InternalServerError:
+      description: Erreur serveur interne
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: Internal Server Error
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Authentification JWT via Bearer token.
+        Obtenez le token via `/api/auth/local` ou `/api/auth/local/register`
+
+security:
+  - bearerAuth: []
+

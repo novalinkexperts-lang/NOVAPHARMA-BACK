@@ -53,6 +53,15 @@ const customRoutes = [
             middlewares: [],
         },
     },
+    {
+        method: 'GET',
+        path: '/backups/files/:filename/download',
+        handler: 'backup.downloadFile',
+        config: {
+            policies: [],
+            middlewares: [],
+        },
+    },
 ];
 
 const config = {

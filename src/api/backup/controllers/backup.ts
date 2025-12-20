@@ -3,6 +3,7 @@
  */
 
 import { factories } from '@strapi/strapi';
+import * as fs from 'fs';
 
 export default factories.createCoreController('api::backup.backup', ({ strapi }) => {
     const backupService = strapi.service('api::backup.backup');
@@ -18,7 +19,7 @@ export default factories.createCoreController('api::backup.backup', ({ strapi })
 
                 // Générer un ID unique pour le suivi
                 const backupId = `backup_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-                
+
                 // Démarrer le backup en arrière-plan
                 backupService.createBackup({ type, backupType, backupId })
                     .then((backup) => {
@@ -107,11 +108,11 @@ export default factories.createCoreController('api::backup.backup', ({ strapi })
                 });
             } catch (error: any) {
                 strapi.log.error('Error restoring backup:', error);
-                
+
                 if (error.message.includes('not found')) {
                     return ctx.notFound(error.message);
                 }
-                
+
                 return ctx.internalServerError(error.message || 'Error restoring backup');
             }
         },
@@ -154,12 +155,48 @@ export default factories.createCoreController('api::backup.backup', ({ strapi })
                 });
             } catch (error: any) {
                 strapi.log.error('Error deleting backup file:', error);
-                
+
                 if (error.message.includes('not found')) {
                     return ctx.notFound(error.message);
                 }
-                
+
                 return ctx.internalServerError(error.message || 'Error deleting backup file');
+            }
+        },
+
+        /**
+         * GET /backups/files/:filename/download
+         * Télécharge un fichier de backup
+         */
+        async downloadFile(ctx) {
+            try {
+                const { filename } = ctx.params;
+
+                if (!filename) {
+                    return ctx.badRequest('filename is required');
+                }
+
+                // Récupérer le chemin du fichier
+                const filePath = backupService.getBackupFilePath(filename);
+
+                // Obtenir les stats du fichier pour l'en-tête Content-Length
+                const stats = await fs.promises.stat(filePath);
+
+                // Définir les en-têtes pour le téléchargement
+                ctx.set('Content-Type', 'application/octet-stream');
+                ctx.set('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+                ctx.set('Content-Length', stats.size.toString());
+
+                // Envoyer le fichier en tant que stream
+                ctx.body = fs.createReadStream(filePath);
+            } catch (error: any) {
+                strapi.log.error('Error downloading backup file:', error);
+
+                if (error.message.includes('not found') || error.message.includes('Invalid')) {
+                    return ctx.notFound(error.message || 'Backup file not found');
+                }
+
+                return ctx.internalServerError(error.message || 'Error downloading backup file');
             }
         },
     };

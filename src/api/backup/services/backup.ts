@@ -333,4 +333,28 @@ export default factories.createCoreService('api::backup.backup', ({ strapi }) =>
         await unlink(backupPath);
         return { success: true, message: 'Backup file deleted' };
     },
+
+    /**
+     * Récupère le chemin complet d'un fichier de backup
+     * @param filename Le nom du fichier de backup
+     * @returns Le chemin complet du fichier
+     */
+    getBackupFilePath(filename: string): string {
+        const backupsDir = path.join(process.cwd(), 'backups');
+        const backupPath = path.join(backupsDir, filename);
+
+        // Sécurité : vérifier que le chemin est bien dans le dossier backups
+        const normalizedBackupPath = path.normalize(backupPath);
+        const normalizedBackupsDir = path.normalize(backupsDir);
+
+        if (!normalizedBackupPath.startsWith(normalizedBackupsDir)) {
+            throw new Error('Invalid backup file path');
+        }
+
+        if (!fs.existsSync(backupPath)) {
+            throw new Error('Backup file not found');
+        }
+
+        return backupPath;
+    },
 }));
