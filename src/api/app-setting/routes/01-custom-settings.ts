@@ -4,7 +4,7 @@ const customRoutes = [
         path: '/app-settings/default',
         handler: 'app-setting.getDefault',
         config: {
-
+            auth: false,
         },
     },
     {

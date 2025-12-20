@@ -18,6 +18,29 @@ const resolveIpAddress = (ctx: any) => {
     return ctx.request?.ip || ctx.ip || undefined;
 };
 
+const resolveLocation = async (ipAddress: string | undefined): Promise<string | undefined> => {
+
+    if (!ipAddress || ipAddress === '::1' || ipAddress === '127.0.0.1' || ipAddress.startsWith('192.168.') || ipAddress.startsWith('10.') || ipAddress.startsWith('172.')) {
+        // Skip local/private IPs
+        return "Local IP";
+    }
+
+    try {
+        // Using ip-api.com free service (45 requests/minute limit)
+        const response = await fetch(`http://ip-api.com/json/${ipAddress}?fields=status,country,city`);
+        const data = await response.json() as { status?: string; country?: string; city?: string };
+
+        if (data.status === 'success' && data.country && data.city) {
+            return `${data.country}, ${data.city}`;
+        }
+    } catch (error) {
+        // Silently fail - don't block logging if geolocation fails
+        console.warn('Failed to resolve location from IP:', error);
+    }
+
+    return undefined;
+};
+
 const resolveUserDocumentId = (ctx: any) => ctx.state?.user?.documentId || ctx.state?.user?.id || null;
 
 const resolveModule = async (strapi: any, refs: string[]) => {
@@ -52,14 +75,15 @@ export default factories.createCoreService('api::log.log', ({ strapi }) => ({
         const userDocumentId = resolveUserDocumentId(ctx);
         console.log("ctx.state?.user", ctx.state);
         console.log("userDocumentId", userDocumentId);
+        const ipAddress = resolveIpAddress(ctx);
         const logData: any = {
             date: new Date(),
             action,
             details,
             dataBefore: toSafeJSON(dataBefore),
             dataAfter: toSafeJSON(dataAfter),
-            ipAdress: resolveIpAddress(ctx),
-            localisation: ctx.request?.headers?.['accept-language'],
+            ipAdress: ipAddress,
+            localisation: await resolveLocation(ipAddress),
         };
 
         if (module?.documentId) {
@@ -96,14 +120,15 @@ export default factories.createCoreService('api::log.log', ({ strapi }) => ({
         console.log("ctx.state?.user", ctx.state);
         console.log("userDocumentId", userDocumentId);
         console.log("module", module);
+        const ipAddress = resolveIpAddress(ctx);
         const logData: any = {
             date: new Date(),
             action,
             details,
             dataBefore: toSafeJSON(dataBefore),
             dataAfter: toSafeJSON(dataAfter),
-            ipAdress: resolveIpAddress(ctx),
-            localisation: ctx.request?.headers?.['accept-language'],
+            ipAdress: ipAddress,
+            localisation: await resolveLocation(ipAddress),
         };
         console.log("logData", logData);
         if (module?.documentId) {
